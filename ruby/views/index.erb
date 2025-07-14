@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Card Payments</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #ffffff;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1, h2 {
+      margin-bottom: 0.5em;
+    }
+    form {
+      border-top: 3px solid #000000;
+      padding-top: 20px;
+    }
+    input, select {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      font-size: 16px;
+      border: 1px solid #cccccc;
+      border-radius: 4px;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .row .half {
+      flex: 1 1 48%;
+    }
+    @media (max-width: 600px) {
+      .row {
+        flex-direction: column;
+      }
+      .row .half {
+        flex: 1 1 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Card Payments</h1>
+    <h2>Payment Form</h2>
+
+    <form id="payment-form" action="/process-payment" method="POST">
+      <label for="amount">Amount ($):</label>
+      <input type="number" id="amount" name="amount" min="0.01" step="0.01" value="10.00" required>
+
+      <label for="billing_zip">Billing Zip Code:</label>
+      <input type="text" id="billing_zip" name="billing_zip" required>
+
+      <div id="credit-card"></div>
+    </form>
+  </div>
+
+  <script src="https://js.globalpay.com/v1/globalpayments.js"></script>
+  <script>
+    async function initializePaymentForm() {
+      const form = document.getElementById('payment-form');
+
+      try {
+        await ensureGlobalPaymentsReady();
+
+        const res = await fetch('/config');
+        const config = await res.json();
+
+        if (!config?.data?.publicApiKey) {
+          throw new Error('Missing public API key');
+        }
+
+        console.log('[GlobalPayments] Config loaded', config);
+
+        GlobalPayments.configure({
+          publicApiKey: config.data.publicApiKey
+        });
+
+        const cardForm = GlobalPayments.creditCard.form('#credit-card', {
+          style: 'gp-default',
+          labels: {
+            cardNumber: 'Card Number',
+            cardExpiration: 'Card Expiration',
+            cardCvv: 'Card CVV',
+            cardHolderName: 'Card Holder Name'
+          }
+        });
+
+        cardForm.on('token-success', function (resp) {
+          console.log('[GlobalPayments] Tokenization success:', resp);
+          const tokenInput = document.createElement('input');
+          tokenInput.type = 'hidden';
+          tokenInput.name = 'payment_token';
+          tokenInput.value = resp.paymentReference;
+          form.appendChild(tokenInput);
+          form.submit();
+        });
+
+        cardForm.on('token-error', function (error) {
+          alert('Error tokenizing card: ' + error.message);
+          console.error('[GlobalPayments] Tokenization error:', error);
+        });
+
+      } catch (err) {
+        alert('Error initializing payment form: ' + err.message);
+        console.error('[Init error]', err);
+      }
+    }
+
+    function ensureGlobalPaymentsReady() {
+      return new Promise((resolve, reject) => {
+        if (typeof GlobalPayments !== 'undefined') return resolve();
+        let attempts = 0;
+        const interval = setInterval(() => {
+          if (++attempts > 10) {
+            clearInterval(interval);
+            return reject(new Error('GlobalPayments JS failed to load'));
+          }
+          if (typeof GlobalPayments !== 'undefined') {
+            clearInterval(interval);
+            return resolve();
+          }
+        }, 300);
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', initializePaymentForm);
+  </script>
+</body>
+</html>
