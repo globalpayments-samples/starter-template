@@ -1,0 +1,4 @@
+{
+  "name": "Devcontainer",
+  "image": "ghcr.io/devcontainers/templates/java:4.0.2"
+}
