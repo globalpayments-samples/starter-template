@@ -1,0 +1,4 @@
+{
+  "name": "Devcontainer",
+  "image": "ghcr.io/devcontainers/templates/dotnet:3.5.0"
+}
