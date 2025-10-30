@@ -1,6 +1,6 @@
 # Example environment configuration
 # Copy this file to local.properties and add your actual API keys
 
-# Global Payments API Keys
+# Global Payments API Keys (only public keys belong in the client)
+# Copy your public client key here if needed by the hosted fields SDK
 PUBLIC_API_KEY=pk_test_your_public_key_here
-SECRET_API_KEY=sk_test_your_secret_key_here

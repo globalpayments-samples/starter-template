@@ -23,8 +23,7 @@ android {
             properties.load(localPropertiesFile.newDataInputStream())
         }
         
-        buildConfigField "String", "PUBLIC_API_KEY", "\"${properties.getProperty('PUBLIC_API_KEY', '')}\""
-        buildConfigField "String", "SECRET_API_KEY", "\"${properties.getProperty('SECRET_API_KEY', '')}\""
+    buildConfigField "String", "PUBLIC_API_KEY", "\"${properties.getProperty('PUBLIC_API_KEY', '')}\""
     }
 
     buildTypes {
