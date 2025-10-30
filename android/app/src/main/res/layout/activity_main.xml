@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    tools:context=".MainActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/app_name"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:textColor="@color/gp_primary"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SDK Integration Example"
+                android:textSize="16sp"
+                android:textColor="@color/gray_dark" />
+
+            <TextView
+                android:id="@+id/sdkStatusTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Initializing..."
+                android:textSize="12sp"
+                android:textColor="@color/gray_medium"
+                android:layout_marginTop="4dp" />
+
+        </LinearLayout>
+
+        <!-- Payment Form Card -->
+        <androidx.cardview.widget.CardView
+            style="@style/CardStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <!-- Card Header -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/payment_form_title"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/black"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/payment_form_description"
+                    android:textSize="14sp"
+                    android:textColor="@color/gray_dark"
+                    android:layout_marginBottom="16dp" />
+
+                <!-- Amount Input -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/amountInputLayout"
+                    style="@style/InputFieldStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/amount_label">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/amountEditText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="numberDecimal"
+                        android:text="10.00" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Billing Zip Input -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/billingZipInputLayout"
+                    style="@style/InputFieldStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/billing_zip_label">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/billingZipEditText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textPostalAddress"
+                        android:hint="@string/billing_zip_hint" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Hosted Fields Label -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Credit Card Information:"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/black"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="8dp" />
+
+                <!-- Hosted Fields WebView Container -->
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="250dp"
+                    android:background="@drawable/card_background">
+
+                    <WebView
+                        android:id="@+id/hostedFieldsWebView"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent" />
+
+                    <!-- Loading indicator -->
+                    <ProgressBar
+                        android:id="@+id/loadingProgressBar"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:visibility="visible" />
+
+                    <!-- Error message -->
+                    <TextView
+                        android:id="@+id/errorTextView"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:text="@string/hosted_fields_error"
+                        android:textColor="@color/error"
+                        android:visibility="gone" />
+
+                </FrameLayout>
+
+                <!-- Process Payment Button -->
+                <Button
+                    android:id="@+id/processPaymentButton"
+                    style="@style/PrimaryButtonStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/process_payment"
+                    android:enabled="false" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Status Messages -->
+        <TextView
+            android:id="@+id/statusTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:padding="12dp"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:background="@drawable/card_background"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+</ScrollView>

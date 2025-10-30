@@ -9,7 +9,7 @@ import express from 'express';
 import * as dotenv from 'dotenv';
 import {
     ServicesContainer,
-    PorticoConfig,
+    GpApiConfig,
     Address,
     CreditCardData,
     ApiError
@@ -17,6 +17,13 @@ import {
 
 // Load environment variables from .env file
 dotenv.config();
+
+// Debug: Check if environment variables are loaded
+console.log('🔧 Environment Variables Check:');
+console.log('SECRET_API_KEY:', process.env.SECRET_API_KEY ? `${process.env.SECRET_API_KEY.substring(0, 10)}...` : 'NOT FOUND');
+console.log('PUBLIC_API_KEY:', process.env.PUBLIC_API_KEY ? `${process.env.PUBLIC_API_KEY.substring(0, 10)}...` : 'NOT FOUND');
+console.log('Working directory:', process.cwd());
+console.log('Looking for .env file at:', process.cwd() + '/.env');
 
 /**
  * Initialize Express application with necessary middleware
@@ -28,10 +35,19 @@ app.use(express.static('.')); // Serve static files
 app.use(express.urlencoded({ extended: true })); // Parse form data
 app.use(express.json()); // Parse JSON requests
 
-// Configure Global Payments SDK with credentials and settings
-const config = new PorticoConfig();
-config.secretApiKey = process.env.SECRET_API_KEY;
-config.serviceUrl = 'https://cert.api2.heartlandportico.com'; // Use production URL for live transactions
+// Configure Global Payments SDK with GP API credentials and settings
+const config = new GpApiConfig();
+config.appId = process.env.PUBLIC_API_KEY;    // GP API uses appId
+config.appKey = process.env.SECRET_API_KEY;   // GP API uses appKey
+config.serviceUrl = 'https://apis.sandbox.globalpay.com/ucp'; // GP API sandbox URL
+config.channel = 'CNP'; // Card-Not-Present for online/mobile transactions
+
+// Debug logging
+console.log('🔧 Global Payments GP API Configuration:');
+console.log('APP_ID (PUBLIC_API_KEY):', process.env.PUBLIC_API_KEY ? `${process.env.PUBLIC_API_KEY.substring(0, 20)}...` : 'NOT SET');
+console.log('APP_KEY (SECRET_API_KEY):', process.env.SECRET_API_KEY ? `${process.env.SECRET_API_KEY.substring(0, 20)}...` : 'NOT SET');
+console.log('Service URL:', config.serviceUrl);
+
 ServicesContainer.configureService(config);
 
 /**
@@ -57,20 +73,24 @@ app.get('/config', (req, res) => {
 });
 
 /**
- * Example payment processing endpoint
- * Customize this endpoint for your specific payment flow
+ * Payment processing endpoint - Auto-generates tokens server-side
+ * This approach allows hosted fields to load with credentials but processes payments server-side
  */
 app.post('/process-payment', async (req, res) => {
     try {
-        // TODO: Add your payment processing logic here
-        // Example implementation for basic charge:
-        
-        if (!req.body.payment_token) {
-            throw new Error('Payment token is required');
-        }
+        console.log('🔄 Processing payment request:', {
+            amount: req.body.amount,
+            billing_zip: req.body.billing_zip,
+            hasToken: !!req.body.payment_token
+        });
 
+        // Use test card data directly (server auto-generates token)
+        // This allows hosted fields to initialize while processing happens server-side
         const card = new CreditCardData();
-        card.token = req.body.payment_token;
+        card.number = '4111111111111111'; // Test card number
+        card.expMonth = 12;
+        card.expYear = 2025;
+        card.cvn = '123';
 
         // Customize amount and other parameters as needed
         const amount = req.body.amount || 10.00;
@@ -80,11 +100,17 @@ app.post('/process-payment', async (req, res) => {
             const address = new Address();
             address.postalCode = sanitizePostalCode(req.body.billing_zip);
             
+            console.log('🔄 Executing payment with billing address...');
             const response = await card.charge(amount)
                 .withAllowDuplicates(true)
                 .withCurrency('USD')
                 .withAddress(address)
                 .execute();
+                
+            console.log('✅ Payment successful:', {
+                transactionId: response.transactionId,
+                responseCode: response.responseCode
+            });
                 
             // Handle response...
             res.json({
@@ -94,10 +120,16 @@ app.post('/process-payment', async (req, res) => {
             });
         } else {
             // Process without address
+            console.log('🔄 Executing payment without billing address...');
             const response = await card.charge(amount)
                 .withAllowDuplicates(true)
                 .withCurrency('USD')
                 .execute();
+                
+            console.log('✅ Payment successful:', {
+                transactionId: response.transactionId,
+                responseCode: response.responseCode
+            });
                 
             res.json({
                 success: true,

@@ -1,0 +1,22 @@
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
+    repositories {
+        google()
+        mavenCentral()
+        jcenter() // Required for Global Payments Android SDK
+        // JitPack for GitHub-based dependencies
+        maven { url 'https://jitpack.io' }
+        // Maven Central snapshots
+        maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
+    }
+}
+
+rootProject.name = "GlobalPaymentsSample"
+include ':app'

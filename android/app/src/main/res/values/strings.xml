@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">Global Payments Sample</string>
+    
+    <!-- Payment Form -->
+    <string name="payment_form_title">Credit Card Payment Form</string>
+    <string name="payment_form_description">Secure payment processing using Global Payments tokenization with hosted fields.</string>
+    <string name="amount_label">Amount ($):</string>
+    <string name="billing_zip_label">Billing Zip Code:</string>
+    <string name="billing_zip_hint">12345</string>
+    <string name="process_payment">Process Payment</string>
+    
+    <!-- Payment Status -->
+    <string name="payment_successful">Payment successful! Transaction ID: %s</string>
+    <string name="payment_failed">Payment failed: %s</string>
+    <string name="payment_processing">Processing payment...</string>
+    
+    <!-- Validation Messages -->
+    <string name="error_amount_required">Amount is required</string>
+    <string name="error_amount_invalid">Please enter a valid amount</string>
+    <string name="error_billing_zip_required">Billing zip code is required</string>
+    <string name="error_payment_token_required">Payment token is required</string>
+    
+    <!-- Network Errors -->
+    <string name="error_network">Network error. Please check your connection.</string>
+    <string name="error_server">Server error. Please try again later.</string>
+    <string name="error_unknown">An unexpected error occurred</string>
+    
+    <!-- Hosted Fields -->
+    <string name="hosted_fields_loading">Loading payment form...</string>
+    <string name="hosted_fields_error">Failed to load payment form</string>
+</resources>

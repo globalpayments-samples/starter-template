@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Global Payments Brand Colors -->
+    <color name="gp_primary">#00A651</color>
+    <color name="gp_primary_dark">#008B43</color>
+    <color name="gp_secondary">#0066CC</color>
+    <color name="gp_secondary_dark">#0052A3</color>
+    
+    <!-- Standard Colors -->
+    <color name="white">#FFFFFFFF</color>
+    <color name="black">#FF000000</color>
+    <color name="gray_light">#FFF5F5F5</color>
+    <color name="gray_medium">#FF9E9E9E</color>
+    <color name="gray_dark">#FF424242</color>
+    
+    <!-- Status Colors -->
+    <color name="success">#FF4CAF50</color>
+    <color name="error">#FFF44336</color>
+    <color name="warning">#FFFF9800</color>
+    <color name="info">#FF2196F3</color>
+</resources>

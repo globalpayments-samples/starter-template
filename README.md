@@ -10,13 +10,14 @@ This starter template provides a customizable foundation for Global Payments SDK
 - [Node.js](./nodejs/) - Express.js web application
 - [PHP](./php/) - PHP web application
 - [Python](./python/) - Flask web application
+- [Android](./android/) - Native Android application with hosted fields
 
 ## Template Features
 
 - **SDK Configuration** - Basic setup with environment variables
 - **Placeholder Endpoints** - Ready-to-customize API endpoints  
 - **Error Handling** - Basic error handling structure
-- **Client Integration** - HTML form with hosted fields tokenization
+- **Client Integration** - HTML form with hosted fields tokenization (web) / Native WebView integration (Android)
 - **Multiple Languages** - Consistent structure across all implementations
 
 ## Customization Options

@@ -1,0 +1,79 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    namespace 'com.globalpayments.android.sample'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.globalpayments.android.sample"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        
+        // Load environment variables from local.properties for development
+        Properties properties = new Properties()
+        def localPropertiesFile = project.rootProject.file('local.properties')
+        if (localPropertiesFile.exists()) {
+            properties.load(localPropertiesFile.newDataInputStream())
+        }
+        
+        buildConfigField "String", "PUBLIC_API_KEY", "\"${properties.getProperty('PUBLIC_API_KEY', '')}\""
+        buildConfigField "String", "SECRET_API_KEY", "\"${properties.getProperty('SECRET_API_KEY', '')}\""
+    }
+
+    buildTypes {
+        debug {
+            debuggable true
+            buildConfigField "String", "SERVICE_URL", "\"https://cert.api2.heartlandportico.com\""
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            buildConfigField "String", "SERVICE_URL", "\"https://api2.heartlandportico.com\""
+        }
+    }
+    
+    buildFeatures {
+        buildConfig true
+        viewBinding true
+    }
+    
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+    
+    kotlinOptions {
+        jvmTarget = '11'
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.10.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.activity:activity-ktx:1.8.0'
+    implementation 'androidx.fragment:fragment-ktx:1.6.2'
+    
+    // HTTP client for backend API calls
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    implementation 'com.google.code.gson:gson:2.10.1'
+    
+    // Required for coroutines and Android components
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+    
+    // WebView for hosted fields
+    implementation 'androidx.webkit:webkit:1.8.0'
+    
+    // Testing dependencies
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+}

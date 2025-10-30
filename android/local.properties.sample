@@ -1,0 +1,6 @@
+# Example environment configuration
+# Copy this file to local.properties and add your actual API keys
+
+# Global Payments API Keys
+PUBLIC_API_KEY=pk_test_your_public_key_here
+SECRET_API_KEY=sk_test_your_secret_key_here

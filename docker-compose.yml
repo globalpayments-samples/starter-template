@@ -139,6 +139,20 @@ services:
     profiles:
       - testing
 
+  android:
+    build: 
+      context: ./android
+      dockerfile: Dockerfile
+    environment:
+      - PUBLIC_API_KEY=${PUBLIC_API_KEY}
+      - SECRET_API_KEY=${SECRET_API_KEY}
+    networks:
+      - payments
+    volumes:
+      - ./android/app/build/outputs:/app/outputs
+    profiles:
+      - android-build
+
 networks:
   payments:
     driver: bridge
