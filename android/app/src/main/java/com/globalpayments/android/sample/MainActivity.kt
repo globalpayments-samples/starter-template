@@ -64,7 +64,80 @@ class MainActivity : AppCompatActivity() {
     
     private fun setupButton() {
         binding.processPaymentButton.setOnClickListener {
-            processPayment()
+            binding.hostedFieldsWebView.evaluateJavascript(
+                """
+                (function() {
+                    var card = document.getElementById('cardNumber');
+                    var expiry = document.getElementById('expiry');
+                    var cvv = document.getElementById('cvv');
+                    var missing = [];
+                    if (!card.value.trim()) missing.push(card);
+                    if (!expiry.value.trim()) missing.push(expiry);
+                    if (!cvv.value.trim()) missing.push(cvv);
+                    missing.forEach(function(field) {
+                        field.style.borderColor = '#dc3545';
+                        field.style.backgroundColor = '#f8d7da';
+                    });
+                    if (missing.length > 0) {
+                        return JSON.stringify({ error: 'Please fill all card fields.' });
+                    }
+                    // Reset styles if all fields are filled
+                    [card, expiry, cvv].forEach(function(field) {
+                        field.style.borderColor = '#ddd';
+                        field.style.backgroundColor = '#fff';
+                    });
+                    return JSON.stringify({
+                        cardNumber: card.value.trim(),
+                        expiry: expiry.value.trim(),
+                        cvv: cvv.value.trim()
+                    });
+                })();
+                """
+            ) { cardDataJson ->
+                val cleanJson = cardDataJson.trim().let {
+                    if (it.startsWith("\"") && it.endsWith("\"")) {
+                        it.substring(1, it.length - 1).replace("\\\"", "\"")
+                    } else it
+                }
+                val cardData = try {
+                    org.json.JSONObject(cleanJson)
+                } catch (e: Exception) {
+                    android.util.Log.e("GP_DEBUG", "Failed to parse cardDataJson: $cleanJson", e)
+                    null
+                }
+                android.util.Log.d("GP_DEBUG", "Card Data from WebView: $cardDataJson")
+                if (cardData == null || cardData.has("error")) {
+                    Toast.makeText(this, cardData?.optString("error") ?: "Please fill all card fields.", Toast.LENGTH_SHORT).show()
+                    return@evaluateJavascript
+                }
+                val amountText = binding.amountEditText.text.toString()
+                val zip = binding.billingZipEditText.text.toString()
+                if (amountText.isEmpty() || zip.length < 3) {
+                    Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                    return@evaluateJavascript
+                }
+                val amount = amountText.toDoubleOrNull() ?: 0.0
+                // val paymentToken = cardData.optString("cardNumber")
+                // Send card data to backend so it generates token
+                lifecycleScope.launch {
+                    try {
+                        val result = paymentService.processPaymentWithCardData(
+                            cardNumber = cardData.optString("cardNumber"),
+                            expiry = cardData.optString("expiry"),
+                            cvv = cardData.optString("cvv"),
+                            amount = amount,
+                            billingZip = zip
+                        )
+                        withContext(Dispatchers.Main) {
+                            showResultDialog("Payment Result", result)
+                        }
+                    } catch (e: Exception) {
+                        withContext(Dispatchers.Main) {
+                            showResultDialog("Payment Error", "Exception: ${e.message}\nStack: ${e.stackTrace.take(3).joinToString("\n")}")
+                        }
+                    }
+                }
+            }
         }
     }
     
@@ -73,8 +146,8 @@ class MainActivity : AppCompatActivity() {
             <!DOCTYPE html>
             <html>
             <head>
-                <meta charset="utf-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1">
+                <meta charset='utf-8'>
+                <meta name='viewport' content='width=device-width, initial-scale=1'>
                 <style>
                     body {
                         font-family: Arial, sans-serif;
@@ -121,20 +194,20 @@ class MainActivity : AppCompatActivity() {
                 </style>
             </head>
             <body>
-                <div class="form-container">
-                    <div class="form-group">
-                        <label for="cardNumber">Card Number</label>
-                        <input type="text" id="cardNumber" value="4111 1111 1111 1111" maxlength="19">
+                <div class='form-container'>
+                    <div class='form-group'>
+                        <label for='cardNumber'>Card Number</label>
+                        <input type='text' id='cardNumber' placeholder='Card Number' maxlength='19'>
                     </div>
-                    <div class="form-group">
-                        <label for="expiry">Expiry Date</label>
-                        <input type="text" id="expiry" value="12/25" maxlength="5">
+                    <div class='form-group'>
+                        <label for='expiry'>Expiry Date</label>
+                        <input type='text' id='expiry' placeholder='MM/YY' maxlength='5'>
                     </div>
-                    <div class="form-group">
-                        <label for="cvv">CVV</label>
-                        <input type="text" id="cvv" value="123" maxlength="4">
+                    <div class='form-group'>
+                        <label for='cvv'>CVV</label>
+                        <input type='text' id='cvv' placeholder='CVV' maxlength='4'>
                     </div>
-                    <div class="status">
+                    <div class='status'>
                         ✓ Hosted Fields Ready for Secure Payment
                     </div>
                 </div>
@@ -160,17 +233,43 @@ class MainActivity : AppCompatActivity() {
         val amount = amountText.toDoubleOrNull() ?: 0.0
         
         // Process payment on background thread
-        lifecycleScope.launch {
-            try {
-                val result = paymentService.processPaymentWithToken("demo_token", amount)
-                // Switch back to main thread for UI updates
-                withContext(Dispatchers.Main) {
-                    // Show result in a persistent dialog
-                    showResultDialog("Payment Result", result)
-                }
+        // Get card data from hosted fields WebView
+        binding.hostedFieldsWebView.evaluateJavascript(
+            """
+            (function() {
+                return JSON.stringify({
+                    cardNumber: document.getElementById('cardNumber').value.trim(),
+                    expiry: document.getElementById('expiry').value.trim(),
+                    cvv: document.getElementById('cvv').value.trim()
+                });
+            })();
+            """
+        ) { cardDataJson ->
+            val cardData = try {
+                org.json.JSONObject(cardDataJson)
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    showResultDialog("Payment Error", "Exception: ${e.message}\nStack: ${e.stackTrace.take(3).joinToString("\n")}")
+                null
+            }
+            if (cardData == null ||
+                cardData.optString("cardNumber").isEmpty() ||
+                cardData.optString("expiry").isEmpty() ||
+                cardData.optString("cvv").isEmpty()) {
+                Toast.makeText(this, "Please fill all card fields.", Toast.LENGTH_SHORT).show()
+                return@evaluateJavascript
+            }
+            // Tokenize card data here (call your tokenization API)
+            // For demo, just pass card number as token (replace with real tokenization)
+            val paymentToken = cardData.optString("cardNumber")
+            lifecycleScope.launch {
+                try {
+                    val result = paymentService.processPaymentWithToken(paymentToken, amount)
+                    withContext(Dispatchers.Main) {
+                        showResultDialog("Payment Result", result)
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        showResultDialog("Payment Error", "Exception: ${e.message}\nStack: ${e.stackTrace.take(3).joinToString("\n")}")
+                    }
                 }
             }
         }

@@ -18,13 +18,6 @@ import {
 // Load environment variables from .env file
 dotenv.config();
 
-// Debug: Check if environment variables are loaded
-console.log('🔧 Environment Variables Check:');
-console.log('SECRET_API_KEY:', process.env.SECRET_API_KEY ? `${process.env.SECRET_API_KEY.substring(0, 10)}...` : 'NOT FOUND');
-console.log('PUBLIC_API_KEY:', process.env.PUBLIC_API_KEY ? `${process.env.PUBLIC_API_KEY.substring(0, 10)}...` : 'NOT FOUND');
-console.log('Working directory:', process.cwd());
-console.log('Looking for .env file at:', process.cwd() + '/.env');
-
 /**
  * Initialize Express application with necessary middleware
  */
@@ -41,13 +34,6 @@ config.appId = process.env.PUBLIC_API_KEY;    // GP API uses appId
 config.appKey = process.env.SECRET_API_KEY;   // GP API uses appKey
 config.serviceUrl = 'https://apis.sandbox.globalpay.com/ucp'; // GP API sandbox URL
 config.channel = 'CNP'; // Card-Not-Present for online/mobile transactions
-
-// Debug logging
-console.log('🔧 Global Payments GP API Configuration:');
-console.log('APP_ID (PUBLIC_API_KEY):', process.env.PUBLIC_API_KEY ? `${process.env.PUBLIC_API_KEY.substring(0, 20)}...` : 'NOT SET');
-console.log('APP_KEY (SECRET_API_KEY):', process.env.SECRET_API_KEY ? `${process.env.SECRET_API_KEY.substring(0, 20)}...` : 'NOT SET');
-console.log('Service URL:', config.serviceUrl);
-
 ServicesContainer.configureService(config);
 
 /**
@@ -73,24 +59,44 @@ app.get('/config', (req, res) => {
 });
 
 /**
- * Payment processing endpoint - Auto-generates tokens server-side
- * This approach allows hosted fields to load with credentials but processes payments server-side
+ * Example payment processing endpoint
+ * Customize this endpoint for your specific payment flow
  */
 app.post('/process-payment', async (req, res) => {
     try {
-        console.log('🔄 Processing payment request:', {
-            amount: req.body.amount,
-            billing_zip: req.body.billing_zip,
-            hasToken: !!req.body.payment_token
-        });
+        // TODO: Add your payment processing logic here
+        // Example implementation for basic charge:
+        
+        let card = new CreditCardData();
+        let chargeBuilder;
 
-        // Use test card data directly (server auto-generates token)
-        // This allows hosted fields to initialize while processing happens server-side
-        const card = new CreditCardData();
-        card.number = '4111111111111111'; // Test card number
-        card.expMonth = 12;
-        card.expYear = 2025;
-        card.cvn = '123';
+        // Check if we have a payment token
+        if (req.body.payment_token && req.body.payment_token.trim() !== '') {
+            // Use existing token
+            card.token = req.body.payment_token;
+            chargeBuilder = card.charge(req.body.amount || 10.00)
+                .withAllowDuplicates(true)
+                .withCurrency('USD');
+        } 
+        // Check if we have card data to process directly
+        else if (req.body.card_number && req.body.expiry_date && req.body.cvv) {
+            // Use card data directly
+            card.number = req.body.card_number;
+            card.expMonth = parseInt(req.body.expiry_date.split('/')[0]);
+            card.expYear = 2000 + parseInt(req.body.expiry_date.split('/')[1]);
+            card.cvn = req.body.cvv;
+            
+            chargeBuilder = card.charge(req.body.amount || 10.00)
+                .withAllowDuplicates(true)
+                .withCurrency('USD');
+        }
+        // No valid payment method provided
+        else {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing payment method. Please provide either a payment token or card data (card_number, expiry_date, cvv).'
+            });
+        }
 
         // Customize amount and other parameters as needed
         const amount = req.body.amount || 10.00;
@@ -100,43 +106,17 @@ app.post('/process-payment', async (req, res) => {
             const address = new Address();
             address.postalCode = sanitizePostalCode(req.body.billing_zip);
             
-            console.log('🔄 Executing payment with billing address...');
-            const response = await card.charge(amount)
-                .withAllowDuplicates(true)
-                .withCurrency('USD')
-                .withAddress(address)
-                .execute();
-                
-            console.log('✅ Payment successful:', {
-                transactionId: response.transactionId,
-                responseCode: response.responseCode
-            });
-                
-            // Handle response...
-            res.json({
-                success: true,
-                message: 'Payment processed successfully',
-                data: { transactionId: response.transactionId }
-            });
-        } else {
-            // Process without address
-            console.log('🔄 Executing payment without billing address...');
-            const response = await card.charge(amount)
-                .withAllowDuplicates(true)
-                .withCurrency('USD')
-                .execute();
-                
-            console.log('✅ Payment successful:', {
-                transactionId: response.transactionId,
-                responseCode: response.responseCode
-            });
-                
-            res.json({
-                success: true,
-                message: 'Payment processed successfully',
-                data: { transactionId: response.transactionId }
-            });
+            chargeBuilder = chargeBuilder.withAddress(address);
         }
+
+        const response = await chargeBuilder.execute();
+         
+        // Handle response...
+        res.json({
+            success: true,
+            message: 'Payment processed successfully',
+            data: { transactionId: response.transactionId }
+        });
 
     } catch (error) {
         res.status(500).json({
