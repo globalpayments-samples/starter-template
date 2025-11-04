@@ -345,71 +345,67 @@ class MainActivity : AppCompatActivity() {
                 <meta charset='utf-8'>
                 <meta name='viewport' content='width=device-width, initial-scale=1'>
                 <style>
+                    * {
+                        box-sizing: border-box;
+                    }
                     body {
-                        font-family: Arial, sans-serif;
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                         margin: 0;
-                        padding: 16px;
-                        background-color: #f8f9fa;
+                        padding: 12px;
+                        background-color: #F8F8F8;
                     }
                     .form-container {
                         background: white;
-                        padding: 20px;
+                        padding: 16px;
                         border-radius: 8px;
-                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
                     }
                     .form-group {
-                        margin-bottom: 16px;
+                        margin-bottom: 14px;
                     }
                     label {
                         display: block;
-                        margin-bottom: 4px;
-                        font-weight: bold;
-                        color: #333;
+                        margin-bottom: 6px;
+                        font-weight: 600;
+                        color: #0C0C0C;
+                        font-size: 14px;
                     }
-                    input {
+                    input, select {
                         width: 100%;
-                        padding: 12px;
-                        border: 1px solid #ddd;
-                        border-radius: 4px;
+                        padding: 11px 12px;
+                        border: 1.5px solid #C4C4C4;
+                        border-radius: 6px;
                         font-size: 16px;
-                        box-sizing: border-box;
+                        background-color: white;
+                        font-family: inherit;
                     }
-                    input:focus {
+                    input:focus, select:focus {
                         outline: none;
-                        border-color: #007bff;
-                        box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+                        border-color: #262AFF;
+                        box-shadow: 0 0 0 3px rgba(38,42,255,0.1);
+                    }
+                    input::placeholder {
+                        color: #999999;
                     }
                     .status {
-                        margin-top: 16px;
-                        padding: 8px;
-                        background-color: #d4edda;
-                        color: #155724;
-                        border-radius: 4px;
+                        margin-top: 14px;
+                        padding: 10px 12px;
+                        background-color: #E6F2FF;
+                        color: #262AFF;
+                        border-radius: 6px;
                         text-align: center;
-                    }
-                    select {
-                        width: 100%;
-                        padding: 12px;
-                        border: 1px solid #ddd;
-                        border-radius: 4px;
-                        font-size: 16px;
-                        box-sizing: border-box;
-                        background-color: white;
-                    }
-                    select:focus {
-                        outline: none;
-                        border-color: #007bff;
-                        box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+                        font-size: 13px;
+                        font-weight: 500;
                     }
                     .card-badge {
                         display: inline-block;
-                        padding: 4px 8px;
-                        background-color: #e3f2fd;
-                        color: #1976d2;
+                        padding: 3px 8px;
+                        background-color: #E6F2FF;
+                        color: #262AFF;
                         border-radius: 3px;
-                        font-size: 12px;
+                        font-size: 11px;
                         margin-left: 8px;
-                        font-weight: bold;
+                        font-weight: 600;
                     }
                 </style>
                 <script>

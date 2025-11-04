@@ -1,21 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Global Payments Brand Colors -->
-    <color name="gp_primary">#00A651</color>
-    <color name="gp_primary_dark">#008B43</color>
-    <color name="gp_secondary">#0066CC</color>
-    <color name="gp_secondary_dark">#0052A3</color>
+    <!-- Global Payments Brand Colors (2025 Brand Guide) -->
+    <!-- Primary Palette -->
+    <color name="gp_primary">#262AFF</color>           <!-- Global Blue -->
+    <color name="gp_primary_dark">#1B1EC6</color>       <!-- Deep Blue -->
+    <color name="white">#FFFFFF</color>
+    
+    <!-- Secondary Palette -->
+    <color name="gp_secondary">#1B1EC6</color>          <!-- Deep Blue -->
+    <color name="gp_secondary_dark">#0C0C0C</color>     <!-- Black -->
+    
+    <!-- Tertiary Palette (Accents) -->
+    <color name="gp_tertiary_pulse">#1CABFF</color>     <!-- Pulse Blue -->
+    <color name="gp_tertiary_sunshine">#FFCC00</color>  <!-- Sunshine -->
+    <color name="gp_tertiary_creamsicle">#FDA052</color> <!-- Creamsicle -->
+    <color name="gp_tertiary_raspberry">#F4364C</color> <!-- Raspberry -->
+    <color name="gp_tertiary_grape">#87179D</color>     <!-- Grape -->
+    
+    <!-- Neutral Palette -->
+    <color name="gp_neutral_charcoal">#595959</color>   <!-- Charcoal -->
+    <color name="gp_neutral_smoke">#C4C4C4</color>      <!-- Smoke -->
+    <color name="gp_neutral_fog">#EEEEEE</color>        <!-- Fog -->
+    <color name="gp_neutral_haze">#F4F4F4</color>       <!-- Haze -->
+    <color name="gp_neutral_mist">#F8F8F8</color>       <!-- Mist -->
     
     <!-- Standard Colors -->
-    <color name="white">#FFFFFFFF</color>
-    <color name="black">#FF000000</color>
-    <color name="gray_light">#FFF5F5F5</color>
-    <color name="gray_medium">#FF9E9E9E</color>
-    <color name="gray_dark">#FF424242</color>
+    <color name="black">#0C0C0C</color>
+    <color name="gray_light">#F4F4F4</color>
+    <color name="gray_medium">#C4C4C4</color>
+    <color name="gray_dark">#595959</color>
     
     <!-- Status Colors -->
-    <color name="success">#FF4CAF50</color>
-    <color name="error">#FFF44336</color>
-    <color name="warning">#FFFF9800</color>
-    <color name="info">#FF2196F3</color>
+    <color name="success">#4CAF50</color>
+    <color name="error">#F4364C</color>                  <!-- Using GP Raspberry for errors -->
+    <color name="warning">#FFCC00</color>               <!-- Using GP Sunshine for warnings -->
+    <color name="info">#1CABFF</color>                  <!-- Using GP Pulse Blue for info -->
 </resources>

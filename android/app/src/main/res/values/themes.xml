@@ -1,38 +1,60 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme -->
+    <!-- Base application theme - Global Payments 2025 Brand -->
     <style name="Theme.GlobalPaymentsSample" parent="Theme.Material3.DayNight">
-        <!-- Primary brand color -->
+        <!-- Primary brand color: Global Blue -->
         <item name="colorPrimary">@color/gp_primary</item>
         <item name="colorPrimaryVariant">@color/gp_primary_dark</item>
         <item name="colorOnPrimary">@color/white</item>
         
-        <!-- Secondary brand color -->
+        <!-- Secondary brand color: Deep Blue -->
         <item name="colorSecondary">@color/gp_secondary</item>
         <item name="colorSecondaryVariant">@color/gp_secondary_dark</item>
-        <item name="colorOnSecondary">@color/black</item>
+        <item name="colorOnSecondary">@color/white</item>
         
-        <!-- Status bar color -->
+        <!-- Tertiary accent: Pulse Blue -->
+        <item name="colorTertiary">@color/gp_tertiary_pulse</item>
+        <item name="colorOnTertiary">@color/black</item>
+        
+        <!-- Status bar and system colors -->
         <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
+        
+        <!-- Text colors -->
+        <item name="android:textColorPrimary">@color/gp_secondary_dark</item>
+        <item name="android:textColorSecondary">@color/gp_neutral_charcoal</item>
     </style>
     
-    <!-- Card style for payment form -->
+    <!-- Card style - Clean, modern GP aesthetic -->
     <style name="CardStyle">
         <item name="android:layout_margin">16dp</item>
-        <item name="android:elevation">4dp</item>
-        <item name="android:background">@drawable/card_background</item>
+        <item name="android:elevation">2dp</item>
+        <item name="android:background">@color/white</item>
+        <item name="cardCornerRadius">8dp</item>
     </style>
     
-    <!-- Input field style -->
+    <!-- Input field style - GP brand consistency -->
     <style name="InputFieldStyle" parent="Widget.Material3.TextInputLayout.OutlinedBox">
-        <item name="android:layout_marginTop">8dp</item>
-        <item name="android:layout_marginBottom">8dp</item>
+        <item name="android:layout_marginTop">12dp</item>
+        <item name="android:layout_marginBottom">12dp</item>
+        <item name="boxStrokeColor">@color/gp_neutral_smoke</item>
+        <item name="boxStrokeWidthFocused">2dp</item>
     </style>
     
-    <!-- Button style -->
+    <!-- Primary button style - Bold, modern GP look -->
     <style name="PrimaryButtonStyle" parent="Widget.Material3.Button">
         <item name="android:layout_marginTop">16dp</item>
-        <item name="android:layout_height">56dp</item>
+        <item name="android:layout_height">48dp</item>
         <item name="android:textSize">16sp</item>
         <item name="android:textStyle">bold</item>
+        <item name="backgroundTint">@color/gp_primary</item>
+        <item name="android:textColor">@color/white</item>
+    </style>
+    
+    <!-- Secondary button style - Outlined for secondary actions -->
+    <style name="SecondaryButtonStyle" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="android:layout_marginTop">8dp</item>
+        <item name="android:layout_height">48dp</item>
+        <item name="android:textSize">14sp</item>
+        <item name="strokeColor">@color/gp_primary</item>
+        <item name="android:textColor">@color/gp_primary</item>
     </style>
 </resources>

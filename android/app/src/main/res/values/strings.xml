@@ -1,11 +1,12 @@
 <resources>
     <string name="app_name">Global Payments Sample</string>
+    <string name="app_tagline">Already on it.</string>
     
     <!-- Payment Form -->
-    <string name="payment_form_title">Credit Card Payment Form</string>
-    <string name="payment_form_description">Secure payment processing using Global Payments tokenization with hosted fields.</string>
-    <string name="amount_label">Amount ($):</string>
-    <string name="billing_zip_label">Billing Zip Code:</string>
+    <string name="payment_form_title">Payment Processing</string>
+    <string name="payment_form_description">Secure payment processing powered by Global Payments. Your trusted partner for commerce solutions.</string>
+    <string name="amount_label">Amount ($)</string>
+    <string name="billing_zip_label">Billing Zip Code</string>
     <string name="billing_zip_hint">12345</string>
     <string name="process_payment">Process Payment</string>
     
@@ -28,4 +29,7 @@
     <!-- Hosted Fields -->
     <string name="hosted_fields_loading">Loading payment form...</string>
     <string name="hosted_fields_error">Failed to load payment form</string>
+    
+    <!-- Brand Copy -->
+    <string name="global_payments_description">Global Payments is the worldwide leader of commerce solutions for enterprise merchants, SMBs, iGaming, card-present and card-not-present businesses.</string>
 </resources>
