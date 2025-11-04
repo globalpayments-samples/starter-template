@@ -2,29 +2,39 @@
 
 import android.annotation.SuppressLint
 import android.app.AlertDialog
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.globalpayments.android.sample.databinding.ActivityMainBinding
+import com.globalpayments.android.sample.model.Transaction
 import com.globalpayments.android.sample.service.PaymentService
+import com.globalpayments.android.sample.service.TransactionManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.UUID
 
 class MainActivity : AppCompatActivity() {
     
     private lateinit var binding: ActivityMainBinding
     private val paymentService = PaymentService()
+    private lateinit var transactionManager: TransactionManager
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         
+        transactionManager = TransactionManager(this)
+        
         initializeUI()
         setupWebView()
         setupButton()
+        setupAuthorizeButton()
+        setupTokenizeButton()
+        setupHistoryButton()
     }
     
     private fun initializeUI() {
@@ -40,6 +50,157 @@ class MainActivity : AppCompatActivity() {
         // Pre-populate test data for quick testing
         binding.amountEditText.setText("10.00")
         binding.billingZipEditText.setText("12345")
+    }
+    
+    private fun setupTokenizeButton() {
+        binding.tokenizeCardButton.setOnClickListener {
+            binding.hostedFieldsWebView.evaluateJavascript(
+                """
+                (function() {
+                    var card = document.getElementById('cardNumber');
+                    var expiry = document.getElementById('expiry');
+                    var cvv = document.getElementById('cvv');
+                    var missing = [];
+                    if (!card.value.trim()) missing.push(card);
+                    if (!expiry.value.trim()) missing.push(expiry);
+                    if (!cvv.value.trim()) missing.push(cvv);
+                    missing.forEach(function(field) {
+                        field.style.borderColor = '#dc3545';
+                        field.style.backgroundColor = '#f8d7da';
+                    });
+                    if (missing.length > 0) {
+                        return JSON.stringify({ error: 'Please fill all card fields.' });
+                    }
+                    // Reset styles if all fields are filled
+                    [card, expiry, cvv].forEach(function(field) {
+                        field.style.borderColor = '#ddd';
+                        field.style.backgroundColor = '#fff';
+                    });
+                    return JSON.stringify({
+                        cardNumber: card.value.trim(),
+                        expiry: expiry.value.trim(),
+                        cvv: cvv.value.trim()
+                    });
+                })();
+                """
+            ) { cardDataJson ->
+                val cleanJson = cardDataJson.trim().let {
+                    if (it.startsWith("\"") && it.endsWith("\"")) {
+                        it.substring(1, it.length - 1).replace("\\\"", "\"")
+                    } else it
+                }
+                val cardData = try {
+                    org.json.JSONObject(cleanJson)
+                } catch (e: Exception) {
+                    android.util.Log.e("GP_DEBUG", "Failed to parse cardDataJson: $cleanJson", e)
+                    null
+                }
+                if (cardData == null || cardData.has("error")) {
+                    Toast.makeText(this, cardData?.optString("error") ?: "Please fill all card fields.", Toast.LENGTH_SHORT).show()
+                    return@evaluateJavascript
+                }
+                
+                // Call tokenize endpoint
+                lifecycleScope.launch {
+                    try {
+                        val result = paymentService.tokenizeCard(
+                            cardNumber = cardData.optString("cardNumber"),
+                            expiry = cardData.optString("expiry"),
+                            cvv = cardData.optString("cvv")
+                        )
+                        withContext(Dispatchers.Main) {
+                            showTokenResultDialog(result)
+                        }
+                    } catch (e: Exception) {
+                        withContext(Dispatchers.Main) {
+                            showTokenResultDialog("❌ TOKENIZATION ERROR\n\nError: ${e.message}")
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    private fun setupAuthorizeButton() {
+        binding.authorizeButton.setOnClickListener {
+            binding.hostedFieldsWebView.evaluateJavascript(
+                """
+                (function() {
+                    var card = document.getElementById('cardNumber');
+                    var expiry = document.getElementById('expiry');
+                    var cvv = document.getElementById('cvv');
+                    var missing = [];
+                    if (!card.value.trim()) missing.push(card);
+                    if (!expiry.value.trim()) missing.push(expiry);
+                    if (!cvv.value.trim()) missing.push(cvv);
+                    missing.forEach(function(field) {
+                        field.style.borderColor = '#dc3545';
+                        field.style.backgroundColor = '#f8d7da';
+                    });
+                    if (missing.length > 0) {
+                        return JSON.stringify({ error: 'Please fill all card fields.' });
+                    }
+                    [card, expiry, cvv].forEach(function(field) {
+                        field.style.borderColor = '#ddd';
+                        field.style.backgroundColor = '#fff';
+                    });
+                    return JSON.stringify({
+                        cardNumber: card.value.trim(),
+                        expiry: expiry.value.trim(),
+                        cvv: cvv.value.trim()
+                    });
+                })();
+                """
+            ) { cardDataJson ->
+                val cleanJson = cardDataJson.trim().let {
+                    if (it.startsWith("\"") && it.endsWith("\"")) {
+                        it.substring(1, it.length - 1).replace("\\\"", "\"")
+                    } else it
+                }
+                val cardData = try {
+                    org.json.JSONObject(cleanJson)
+                } catch (e: Exception) {
+                    null
+                }
+                if (cardData == null || cardData.has("error")) {
+                    Toast.makeText(this, cardData?.optString("error") ?: "Please fill all card fields.", Toast.LENGTH_SHORT).show()
+                    return@evaluateJavascript
+                }
+                val amountText = binding.amountEditText.text.toString()
+                val zip = binding.billingZipEditText.text.toString()
+                if (amountText.isEmpty() || zip.length < 3) {
+                    Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                    return@evaluateJavascript
+                }
+                val amount = amountText.toDoubleOrNull() ?: 0.0
+                
+                lifecycleScope.launch {
+                    try {
+                        val result = paymentService.authorizeCard(
+                            cardNumber = cardData.optString("cardNumber"),
+                            expiry = cardData.optString("expiry"),
+                            cvv = cardData.optString("cvv"),
+                            amount = amount,
+                            billingZip = zip
+                        )
+                        withContext(Dispatchers.Main) {
+                            showAuthResultDialog(result)
+                        }
+                    } catch (e: Exception) {
+                        withContext(Dispatchers.Main) {
+                            showResultDialog("Authorization Error", "Exception: ${e.message}")
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    private fun setupHistoryButton() {
+        binding.historyButton.setOnClickListener {
+            val intent = Intent(this, TransactionHistoryActivity::class.java)
+            startActivity(intent)
+        }
     }
     
     @SuppressLint("SetJavaScriptEnabled")
@@ -129,6 +290,8 @@ class MainActivity : AppCompatActivity() {
                             billingZip = zip
                         )
                         withContext(Dispatchers.Main) {
+                            // Save transaction to history
+                            saveTransaction(cardData, amount, result)
                             showResultDialog("Payment Result", result)
                         }
                     } catch (e: Exception) {
@@ -138,6 +301,39 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
+        }
+    }
+    
+    private fun saveTransaction(cardData: org.json.JSONObject, amount: Double, result: String) {
+        try {
+            val cardNumber = cardData.optString("cardNumber", "")
+            val lastFour = cardNumber.takeLast(4).padStart(4, '*')
+            val status = if (result.contains("SUCCESSFUL")) "success" else "failed"
+            val message = if (result.contains("SUCCESSFUL")) "" else result.substring(result.lastIndexOf('\n')).trim()
+            
+            // Extract card type based on first digit
+            val cardType = when {
+                cardNumber.startsWith("4") -> "Visa"
+                cardNumber.startsWith("5") -> "Mastercard"
+                cardNumber.startsWith("3") && !cardNumber.startsWith("36") -> "American Express"
+                cardNumber.startsWith("6") -> "Discover"
+                else -> "Card"
+            }
+            
+            val transaction = Transaction(
+                id = UUID.randomUUID().toString(),
+                amount = amount,
+                cardLastFour = lastFour,
+                cardType = cardType,
+                status = status,
+                timestamp = System.currentTimeMillis(),
+                billingZip = binding.billingZipEditText.text.toString(),
+                message = message
+            )
+            
+            transactionManager.addTransaction(transaction)
+        } catch (e: Exception) {
+            android.util.Log.e("TransactionSave", "Failed to save transaction", e)
         }
     }
     
@@ -191,10 +387,67 @@ class MainActivity : AppCompatActivity() {
                         border-radius: 4px;
                         text-align: center;
                     }
+                    select {
+                        width: 100%;
+                        padding: 12px;
+                        border: 1px solid #ddd;
+                        border-radius: 4px;
+                        font-size: 16px;
+                        box-sizing: border-box;
+                        background-color: white;
+                    }
+                    select:focus {
+                        outline: none;
+                        border-color: #007bff;
+                        box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+                    }
+                    .card-badge {
+                        display: inline-block;
+                        padding: 4px 8px;
+                        background-color: #e3f2fd;
+                        color: #1976d2;
+                        border-radius: 3px;
+                        font-size: 12px;
+                        margin-left: 8px;
+                        font-weight: bold;
+                    }
                 </style>
+                <script>
+                    const testCards = {
+                        'visa': { number: '4111111111111111', expiry: '12/25', cvv: '123' },
+                        'mastercard': { number: '5425233010103442', expiry: '12/25', cvv: '123' },
+                        'amex': { number: '374245455400126', expiry: '12/25', cvv: '1234' },
+                        'discover': { number: '6011111111111117', expiry: '12/25', cvv: '123' }
+                    };
+                    
+                    function onCardSelect(value) {
+                        if (value && testCards[value]) {
+                            const card = testCards[value];
+                            document.getElementById('cardNumber').value = card.number;
+                            document.getElementById('expiry').value = card.expiry;
+                            document.getElementById('cvv').value = card.cvv;
+                            
+                            // Reset field styles
+                            [document.getElementById('cardNumber'), document.getElementById('expiry'), document.getElementById('cvv')].forEach(field => {
+                                field.style.borderColor = '#ddd';
+                                field.style.backgroundColor = '#fff';
+                            });
+                        }
+                    }
+                </script>
             </head>
             <body>
                 <div class='form-container'>
+                    <div class='form-group'>
+                        <label for='cardSelect'>Sample Test Cards <span class='card-badge'>Quick Fill</span></label>
+                        <select id='cardSelect' onchange='onCardSelect(this.value)'>
+                            <option value=''>-- Select a test card --</option>
+                            <option value='visa'>Visa (4111 1111 1111 1111)</option>
+                            <option value='mastercard'>Mastercard (5425 2330 1010 3442)</option>
+                            <option value='amex'>American Express (3742 454554 00126)</option>
+                            <option value='discover'>Discover (6011 1111 1111 1117)</option>
+                        </select>
+                    </div>
                     <div class='form-group'>
                         <label for='cardNumber'>Card Number</label>
                         <input type='text' id='cardNumber' placeholder='Card Number' maxlength='19'>
@@ -291,5 +544,74 @@ class MainActivity : AppCompatActivity() {
                 val messageView = findViewById<android.widget.TextView>(android.R.id.message)
                 messageView?.setTextIsSelectable(true)
             }
+    }
+    
+    private fun showTokenResultDialog(message: String) {
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("Token Generation Result")
+            .setMessage(message)
+            .setPositiveButton("Copy Token") { _, _ ->
+                // Extract token from message if present
+                val tokenMatch = Regex("""Token: ([^\n]+)""").find(message)
+                if (tokenMatch != null) {
+                    val token = tokenMatch.groupValues[1].trim()
+                    val clipboard = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                    val clip = android.content.ClipData.newPlainText("Token", token)
+                    clipboard.setPrimaryClip(clip)
+                    Toast.makeText(this, "Token copied to clipboard!", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "No token found in response", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Dismiss") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .setCancelable(true)
+            .create()
+        
+        dialog.apply {
+            show()
+            val messageView = findViewById<android.widget.TextView>(android.R.id.message)
+            messageView?.setTextIsSelectable(true)
+        }
+    }
+    
+    private fun showAuthResultDialog(message: String) {
+        val transactionIdMatch = Regex("""Transaction ID: ([^\n]+)""").find(message)
+        val transactionId = transactionIdMatch?.groupValues?.get(1)?.trim() ?: ""
+        
+        val amountText = binding.amountEditText.text.toString()
+        val amount = amountText.toDoubleOrNull() ?: 0.0
+        
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("Authorization Result")
+            .setMessage(message)
+            .setPositiveButton("Capture Later") { d, _ ->
+                d.dismiss()
+            }
+            .setNegativeButton("Capture Now") { _, _ ->
+                if (transactionId.isNotEmpty()) {
+                    lifecycleScope.launch {
+                        try {
+                            val result = paymentService.captureTransaction(transactionId, amount)
+                            withContext(Dispatchers.Main) {
+                                showResultDialog("Capture Result", result)
+                            }
+                        } catch (e: Exception) {
+                            withContext(Dispatchers.Main) {
+                                showResultDialog("Capture Error", "Error: ${e.message}")
+                            }
+                        }
+                    }
+                }
+            }
+            .setCancelable(true)
+            .create()
+        
+        dialog.apply {
+            show()
+            val messageView = findViewById<android.widget.TextView>(android.R.id.message)
+            messageView?.setTextIsSelectable(true)
+        }
     }
 }
