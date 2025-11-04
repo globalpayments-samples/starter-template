@@ -160,7 +160,40 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/process_payment"
-                    android:enabled="false" />
+                    android:enabled="false"
+                    android:layout_marginBottom="8dp" />
+
+                <!-- Authorize Only Button -->
+                <Button
+                    android:id="@+id/authorizeButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Authorize Only"
+                    android:textColor="@color/gp_primary"
+                    android:background="@android:color/transparent"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp" />
+
+                <!-- Tokenize Card Button -->
+                <Button
+                    android:id="@+id/tokenizeCardButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Generate Token"
+                    android:textColor="@color/gp_primary"
+                    android:background="@android:color/transparent"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp" />
+
+                <!-- View History Button -->
+                <Button
+                    android:id="@+id/historyButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="View Transaction History"
+                    android:textColor="@color/gp_primary"
+                    android:background="@android:color/transparent"
+                    android:textStyle="bold" />
 
             </LinearLayout>
 
