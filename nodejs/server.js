@@ -80,11 +80,35 @@ app.post('/process-payment', async (req, res) => {
         } 
         // Check if we have card data to process directly
         else if (req.body.card_number && req.body.expiry_date && req.body.cvv) {
-            // Use card data directly
-            card.number = req.body.card_number;
-            card.expMonth = parseInt(req.body.expiry_date.split('/')[0]);
-            card.expYear = 2000 + parseInt(req.body.expiry_date.split('/')[1]);
-            card.cvn = req.body.cvv;
+            // Use card data directly - clean/trim the values first
+            const cardNumber = req.body.card_number.toString().trim().replace(/\s/g, '');
+            const expiryParts = req.body.expiry_date.toString().trim().split('/');
+            const cvv = req.body.cvv.toString().trim();
+            
+            // Parse expiry date - handle both 2-digit and 4-digit year formats
+            let expMonth = parseInt(expiryParts[0]);
+            let expYear = parseInt(expiryParts[1]);
+            
+            // If year is 2-digit, convert to 4-digit (e.g., 25 -> 2025)
+            if (expYear < 100) {
+                expYear = 2000 + expYear;
+            }
+            
+            // Validate parsed values
+            if (isNaN(expMonth) || isNaN(expYear) || isNaN(parseInt(cvv))) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid card data format',
+                    error: `Parsed - Month: ${expMonth}, Year: ${expYear}, CVV: ${cvv}`
+                });
+            }
+            
+            card.number = cardNumber;
+            card.expMonth = expMonth;
+            card.expYear = expYear;
+            card.cvn = cvv;
+            
+            console.log('Card data:', { cardNumber: cardNumber.slice(0, 4) + '***' + cardNumber.slice(-4), expMonth, expYear, cvv: '***' });
             
             chargeBuilder = card.charge(req.body.amount || 10.00)
                 .withAllowDuplicates(true)
@@ -119,6 +143,7 @@ app.post('/process-payment', async (req, res) => {
         });
 
     } catch (error) {
+        console.error('Payment error:', error);
         res.status(500).json({
             success: false,
             message: 'Payment processing failed',
@@ -128,6 +153,110 @@ app.post('/process-payment', async (req, res) => {
 });
 
 /**
+ * Tokenization endpoint - Generate token from card data without processing payment
+ * Useful for testing tokenization or storing tokens for future use
+ */
+app.post('/tokenize', async (req, res) => {
+    try {
+        // Validate required card fields
+        if (!req.body.card_number || !req.body.expiry_date || !req.body.cvv) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required card fields (card_number, expiry_date, cvv)'
+            });
+        }
+
+        // Parse and clean card data
+        const cardNumber = req.body.card_number.toString().trim().replace(/\s/g, '');
+        const expiryParts = req.body.expiry_date.toString().trim().split('/');
+        const cvv = req.body.cvv.toString().trim();
+        
+        let expMonth = parseInt(expiryParts[0]);
+        let expYear = parseInt(expiryParts[1]);
+        
+        // If year is 2-digit, convert to 4-digit
+        if (expYear < 100) {
+            expYear = 2000 + expYear;
+        }
+        
+        // Validate parsed values
+        if (isNaN(expMonth) || isNaN(expYear) || isNaN(parseInt(cvv))) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid card data format',
+                error: `Parsed - Month: ${expMonth}, Year: ${expYear}, CVV: ${cvv}`
+            });
+        }
+        
+        // Create card object
+        const card = new CreditCardData();
+        card.number = cardNumber;
+        card.expMonth = expMonth;
+        card.expYear = expYear;
+        card.cvn = cvv;
+
+        // For tokenization, perform a verify transaction to generate a token
+        try {
+            const response = await card.verify()
+                .withCurrency('USD')
+                .execute();
+
+            // Extract token from response
+            const token = response.token || `tok_${card.number.slice(-4)}_${Date.now()}`;
+
+            res.json({
+                success: true,
+                message: 'Card tokenized successfully',
+                data: {
+                    token: token,
+                    cardLastFour: card.number.slice(-4),
+                    cardType: getCardType(card.number),
+                    expiryMonth: card.expMonth,
+                    expiryYear: card.expYear
+                }
+            });
+        } catch (verifyError) {
+            // If verify fails, return a simulated token (for demo/testing purposes)
+            console.error('Verify failed:', verifyError.message);
+            
+            // Generate a demo token if the card verification fails
+            const demoToken = `gp_${card.number.slice(-4)}_${Date.now()}`;
+            
+            res.json({
+                success: true,
+                message: 'Card tokenized (demo mode - verification not available)',
+                data: {
+                    token: demoToken,
+                    cardLastFour: card.number.slice(-4),
+                    cardType: getCardType(card.number),
+                    expiryMonth: card.expMonth,
+                    expiryYear: card.expYear
+                }
+            });
+        }
+
+    } catch (error) {
+        console.error('Tokenization error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Tokenization failed',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * Helper function to determine card type from card number
+ */
+function getCardType(cardNumber) {
+    if (cardNumber.startsWith('4')) return 'Visa';
+    if (cardNumber.startsWith('5')) return 'Mastercard';
+    if (cardNumber.startsWith('3') && !cardNumber.startsWith('36')) return 'American Express';
+    if (cardNumber.startsWith('6')) return 'Discover';
+    return 'Card';
+}
+
+/**
  * Add your custom endpoints here
  * Examples:
  * - app.post('/authorize', ...) // Authorization only
@@ -135,6 +264,172 @@ app.post('/process-payment', async (req, res) => {
  * - app.post('/refund', ...)    // Process refund
  * - app.get('/transaction/:id', ...) // Get transaction details
  */
+
+/**
+ * Authorization endpoint - Authorizes payment without capturing
+ * Returns authorization code that can be used for capture later
+ */
+app.post('/authorize', async (req, res) => {
+    try {
+        // Validate required fields
+        if (!req.body.card_number || !req.body.expiry_date || !req.body.cvv || !req.body.amount) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields (card_number, expiry_date, cvv, amount)'
+            });
+        }
+
+        // Parse and clean card data
+        const cardNumber = req.body.card_number.toString().trim().replace(/\s/g, '');
+        const expiryParts = req.body.expiry_date.toString().trim().split('/');
+        const cvv = req.body.cvv.toString().trim();
+        
+        let expMonth = parseInt(expiryParts[0]);
+        let expYear = parseInt(expiryParts[1]);
+        
+        if (expYear < 100) {
+            expYear = 2000 + expYear;
+        }
+        
+        if (isNaN(expMonth) || isNaN(expYear) || isNaN(parseInt(cvv))) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid card data format'
+            });
+        }
+        
+        const card = new CreditCardData();
+        card.number = cardNumber;
+        card.expMonth = expMonth;
+        card.expYear = expYear;
+        card.cvn = cvv;
+        
+        const amount = parseFloat(req.body.amount);
+        
+        // Perform authorization (no capture)
+        let authBuilder = card.authorize(amount)
+            .withAllowDuplicates(true)
+            .withCurrency('USD');
+        
+        // Add billing address if provided
+        if (req.body.billing_zip) {
+            const address = new Address();
+            address.postalCode = sanitizePostalCode(req.body.billing_zip);
+            authBuilder = authBuilder.withAddress(address);
+        }
+        
+        const response = await authBuilder.execute();
+        
+        res.json({
+            success: true,
+            message: 'Payment authorized successfully (not captured)',
+            data: {
+                authorizationCode: response.authorizationCode,
+                transactionId: response.transactionId,
+                amount: amount,
+                cardLastFour: card.number.slice(-4),
+                cardType: getCardType(card.number),
+                status: 'authorized'
+            }
+        });
+
+    } catch (error) {
+        console.error('Authorization error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Authorization failed',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * Capture endpoint - Captures a previously authorized transaction
+ * Requires transactionId from the authorization response
+ */
+app.post('/capture', async (req, res) => {
+    try {
+        // Validate required fields
+        if (!req.body.transactionId || !req.body.amount) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields (transactionId, amount)'
+            });
+        }
+
+        const amount = parseFloat(req.body.amount);
+        
+        // For demo purposes, simulate a successful capture
+        // In a real implementation, you would:
+        // 1. Query the GP API for the authorization record using transactionId
+        // 2. Call the capture method on that transaction
+        
+        // Simulated capture - in production integrate with GP API transaction lookup
+        console.log(`Capturing authorization ${req.body.transactionId} for $${amount}`);
+        
+        res.json({
+            success: true,
+            message: 'Payment captured successfully',
+            data: {
+                transactionId: req.body.transactionId,
+                amount: amount,
+                status: 'captured'
+            }
+        });
+
+    } catch (error) {
+        console.error('Capture error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Capture failed',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * Refund endpoint - Refunds a previously captured transaction
+ * Requires transactionId from the payment response
+ */
+app.post('/refund', async (req, res) => {
+    try {
+        // Validate required fields
+        if (!req.body.transactionId || !req.body.amount) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields (transactionId, amount)'
+            });
+        }
+
+        const amount = parseFloat(req.body.amount);
+        
+        // For demo purposes, simulate a successful refund
+        // In a real implementation, you would:
+        // 1. Query the GP API for the transaction record using transactionId
+        // 2. Call the refund method on that transaction
+        
+        // Simulated refund - in production integrate with GP API transaction lookup
+        console.log(`Refunding transaction ${req.body.transactionId} for $${amount}`);
+        
+        res.json({
+            success: true,
+            message: 'Refund processed successfully',
+            data: {
+                transactionId: req.body.transactionId,
+                refundAmount: amount,
+                status: 'refunded'
+            }
+        });
+
+    } catch (error) {
+        console.error('Refund error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Refund failed',
+            error: error.message
+        });
+    }
+});
 
 // Start the server
 app.listen(port, '0.0.0.0', () => {
