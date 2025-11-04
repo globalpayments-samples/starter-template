@@ -343,39 +343,43 @@ class MainActivity : AppCompatActivity() {
             <html>
             <head>
                 <meta charset='utf-8'>
-                <meta name='viewport' content='width=device-width, initial-scale=1'>
+                <meta name='viewport' content='width=device-width, initial-scale=1, user-scalable=no'>
                 <style>
                     * {
                         box-sizing: border-box;
                     }
+                    html, body {
+                        width: 100%;
+                        margin: 0;
+                        padding: 0;
+                    }
                     body {
                         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                        margin: 0;
-                        padding: 12px;
-                        background-color: #F8F8F8;
+                        padding: 4px;
+                        background-color: transparent;
                     }
                     .form-container {
-                        background: white;
-                        padding: 16px;
-                        border-radius: 8px;
-                        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+                        background: transparent;
+                        padding: 0;
+                        border-radius: 0;
+                        box-shadow: none;
                     }
                     .form-group {
-                        margin-bottom: 14px;
+                        margin-bottom: 8px;
                     }
                     label {
                         display: block;
-                        margin-bottom: 6px;
+                        margin-bottom: 3px;
                         font-weight: 600;
                         color: #0C0C0C;
-                        font-size: 14px;
+                        font-size: 13px;
                     }
                     input, select {
                         width: 100%;
-                        padding: 11px 12px;
+                        padding: 8px 9px;
                         border: 1.5px solid #C4C4C4;
                         border-radius: 6px;
-                        font-size: 16px;
+                        font-size: 14px;
                         background-color: white;
                         font-family: inherit;
                     }
@@ -388,23 +392,23 @@ class MainActivity : AppCompatActivity() {
                         color: #999999;
                     }
                     .status {
-                        margin-top: 14px;
-                        padding: 10px 12px;
+                        margin-top: 8px;
+                        padding: 7px 9px;
                         background-color: #E6F2FF;
                         color: #262AFF;
                         border-radius: 6px;
                         text-align: center;
-                        font-size: 13px;
+                        font-size: 12px;
                         font-weight: 500;
                     }
                     .card-badge {
                         display: inline-block;
-                        padding: 3px 8px;
+                        padding: 2px 6px;
                         background-color: #E6F2FF;
                         color: #262AFF;
                         border-radius: 3px;
-                        font-size: 11px;
-                        margin-left: 8px;
+                        font-size: 10px;
+                        margin-left: 6px;
                         font-weight: 600;
                     }
                 </style>
