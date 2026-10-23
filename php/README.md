@@ -4,7 +4,7 @@ This example demonstrates card payment processing using PHP and the Global Payme
 
 ## Requirements
 
-- PHP 7.4 or later
+- PHP 8.2.35+, 8.3.36+, 8.4.27+, or 8.5.12+
 - Composer
 - Global Payments account and API credentials
 
@@ -35,7 +35,7 @@ This example demonstrates card payment processing using PHP and the Global Payme
    ```
    Or manually:
    ```bash
-   php -S localhost:8000
+   ./run.sh
    ```
 
 ## Implementation Details
