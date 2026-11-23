@@ -4,7 +4,7 @@ This example demonstrates card payment processing using Jakarta EE and the Globa
 
 ## Requirements
 
-- Java 11 or later
+- Java 21 or later
 - Maven
 - Global Payments account and API credentials
 

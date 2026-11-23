@@ -4,7 +4,7 @@ This example demonstrates card payment processing using Go and the Global Paymen
 
 ## Requirements
 
-- Go 1.23 or later
+- Go 1.26 or later
 - Global Payments account and API credentials
 
 ## Project Structure
