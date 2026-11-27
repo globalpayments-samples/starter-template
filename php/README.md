@@ -11,7 +11,9 @@ This example demonstrates card payment processing using PHP and the Global Payme
 ## Project Structure
 
 - `process-payment.php` - Payment processing script
-- `index.php` - Client-side payment form
+- `index.html` - Client-side payment form
+- `config.php` - Returns the public API key for the hosted fields
+- `router.php` - Router for the PHP built-in server
 - `composer.json` - Project dependencies
 - `.env.sample` - Template for environment variables
 - `run.sh` - Convenience script to run the application
@@ -35,7 +37,7 @@ This example demonstrates card payment processing using PHP and the Global Payme
    ```
    Or manually:
    ```bash
-   ./run.sh
+   php -S 127.0.0.1:8000 router.php
    ```
 
 ## Implementation Details
@@ -57,7 +59,7 @@ Payment processing flow:
 1. Client submits payment token and billing zip
 2. Server creates CreditCardData with token
 3. Creates Address with postal code
-4. Processes $10 USD charge
+4. Charges the amount from the form in USD
 5. Returns success/error response
 
 ### Error Handling
@@ -68,21 +70,48 @@ Implements comprehensive error handling:
 
 ## API Endpoints
 
-### POST /process-payment.php
-Processes a payment using the provided token and billing information.
+### GET /config
+Returns the public API key the page uses to set up the hosted fields.
+
+Response:
+```json
+{
+    "success": true,
+    "data": {
+        "publicApiKey": "pkapi_cert_xxx"
+    }
+}
+```
+
+### POST /process-payment
+Charges the tokenized card in USD. The page posts it as a form (`application/x-www-form-urlencoded`).
 
 Request Parameters:
-- `payment_token` (string, required) - Token from client-side SDK
-- `billing_zip` (string, required) - Billing postal code
+- `payment_token` (string, required) - Single use token from the hosted fields
+- `amount` (string, required) - Amount to charge, for example `10.00`
+- `billing_zip` (string, required) - Billing postal code, sent for AVS
 
 Response (Success):
-```
-Payment successful! Transaction ID: xxx
+```json
+{
+    "success": true,
+    "message": "Payment successful! Transaction ID: xxx",
+    "data": {
+        "transactionId": "xxx"
+    }
+}
 ```
 
-Response (Error):
-```
-Error: [error message]
+Response (Error, HTTP 400):
+```json
+{
+    "success": false,
+    "message": "Payment processing failed",
+    "error": {
+        "code": "VALIDATION_ERROR | PAYMENT_DECLINED | API_ERROR",
+        "details": "Error message"
+    }
+}
 ```
 
 ## Security Considerations

@@ -30,7 +30,7 @@ This example demonstrates card payment processing using Go and the Global Paymen
    ```bash
    go run main.go
    ```
-   The server will start on http://localhost:8888
+   The server will start on http://localhost:8000
 
 ## Implementation Details
 
@@ -51,7 +51,7 @@ Payment processing flow:
 1. Client submits payment token and billing zip
 2. Server creates CreditCardData with token
 3. Creates Address with postal code
-4. Processes $10 USD charge
+4. Charges the amount from the form in USD
 5. Returns success/error response as JSON
 
 ### Error Handling
@@ -63,37 +63,46 @@ Implements comprehensive error handling:
 ## API Endpoints
 
 ### GET /config
-Returns the public API key for client-side SDK initialization.
+Returns the public API key the page uses to set up the hosted fields.
 
 Response:
 ```json
 {
-  "publicApiKey": "pk_test_xxx"
+    "success": true,
+    "data": {
+        "publicApiKey": "pkapi_cert_xxx"
+    }
 }
 ```
 
 ### POST /process-payment
-Processes a payment using the provided token and billing information.
+Charges the tokenized card in USD. The page posts it as a form (`application/x-www-form-urlencoded`).
 
-Request:
-```json
-{
-  "payment_token": "token_from_client_sdk",
-  "billing_zip": "12345"
-}
-```
+Request Parameters:
+- `payment_token` (string, required) - Single use token from the hosted fields
+- `amount` (string, required) - Amount to charge, for example `10.00`
+- `billing_zip` (string, required) - Billing postal code, sent for AVS
 
 Response (Success):
 ```json
 {
-  "message": "Payment successful! Transaction ID: xxx"
+    "success": true,
+    "message": "Payment successful! Transaction ID: xxx",
+    "data": {
+        "transactionId": "xxx"
+    }
 }
 ```
 
-Response (Error):
+Response (Error, HTTP 400):
 ```json
 {
-  "error": "Payment processing error: Invalid card data"
+    "success": false,
+    "message": "Payment processing failed",
+    "error": {
+        "code": "VALIDATION_ERROR | PAYMENT_DECLINED | API_ERROR",
+        "details": "Error message"
+    }
 }
 ```
 
