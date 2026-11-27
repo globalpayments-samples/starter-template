@@ -14,8 +14,7 @@ import {
     ServicesContainer,
     PorticoConfig,
     Address,
-    CreditCardData,
-    ApiError
+    CreditCardData
 } from 'globalpayments-api';
 
 // Load environment variables from .env file
@@ -69,57 +68,52 @@ app.get('/config', (req, res) => {
  * Customize this endpoint for your specific payment flow
  */
 app.post('/process-payment', async (req, res) => {
+    // Send the same error shape as the other implementations
+    const fail = (status, code, details) => res.status(status).json({
+        success: false,
+        message: 'Payment processing failed',
+        error: { code, details }
+    });
+
+    // TODO: Add your payment processing logic here
+    // Example implementation for basic charge:
+    const { payment_token: paymentToken, billing_zip: billingZip, amount: amountStr } = req.body;
+    if (!paymentToken || !billingZip || !amountStr) {
+        return fail(400, 'VALIDATION_ERROR', 'Missing required fields');
+    }
+
+    // Customize amount and other parameters as needed
+    const amount = Number(amountStr);
+    if (!Number.isFinite(amount) || amount <= 0) {
+        return fail(400, 'VALIDATION_ERROR', 'Amount must be a positive number');
+    }
+
     try {
-        // TODO: Add your payment processing logic here
-        // Example implementation for basic charge:
-        
-        if (!req.body.payment_token) {
-            throw new Error('Payment token is required');
-        }
-
         const card = new CreditCardData();
-        card.token = req.body.payment_token;
+        card.token = paymentToken;
 
-        // Customize amount and other parameters as needed
-        const amount = req.body.amount || 10.00;
+        // Add billing address for AVS verification
+        const address = new Address();
+        address.postalCode = sanitizePostalCode(billingZip);
 
-        // Add billing address if needed
-        if (req.body.billing_zip) {
-            const address = new Address();
-            address.postalCode = sanitizePostalCode(req.body.billing_zip);
-            
-            const response = await card.charge(amount)
-                .withAllowDuplicates(true)
-                .withCurrency('USD')
-                .withAddress(address)
-                .execute();
-                
-            // Handle response...
-            res.json({
-                success: true,
-                message: 'Payment processed successfully',
-                data: { transactionId: response.transactionId }
-            });
-        } else {
-            // Process without address
-            const response = await card.charge(amount)
-                .withAllowDuplicates(true)
-                .withCurrency('USD')
-                .execute();
-                
-            res.json({
-                success: true,
-                message: 'Payment processed successfully',
-                data: { transactionId: response.transactionId }
-            });
+        const response = await card.charge(amount.toFixed(2))
+            .withAllowDuplicates(true)
+            .withCurrency('USD')
+            .withAddress(address)
+            .execute();
+
+        // A declined card comes back as a normal response, not an error
+        if (response.responseCode !== '00') {
+            return fail(400, 'PAYMENT_DECLINED', response.responseMessage);
         }
 
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Payment processing failed',
-            error: error.message
+        res.json({
+            success: true,
+            message: `Payment successful! Transaction ID: ${response.transactionId}`,
+            data: { transactionId: response.transactionId }
         });
+    } catch (error) {
+        fail(400, 'API_ERROR', error.message);
     }
 });
 

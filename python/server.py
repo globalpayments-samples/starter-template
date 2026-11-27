@@ -5,6 +5,7 @@ This Flask application provides a starting template for Global Payments SDK inte
 Customize the endpoints and logic below for your specific use case.
 """
 
+import math
 import os
 import re
 from flask import Flask, request, jsonify, send_from_directory
@@ -66,12 +67,12 @@ def get_config():
         }
     })
 
-def payment_error(details, status):
+def payment_error(code, details, status):
     """Build the error response for a failed payment request."""
     return jsonify({
         'success': False,
         'message': 'Payment processing failed',
-        'error': details
+        'error': {'code': code, 'details': details}
     }), status
 
 @app.route('/process-payment', methods=['POST'])
@@ -80,49 +81,53 @@ def process_payment():
     Example payment processing endpoint.
     Customize this endpoint for your specific payment flow.
     """
+    # TODO: Add your payment processing logic here
+    # Example implementation for basic charge:
+    payment_token = request.form.get('payment_token')
+    billing_zip = request.form.get('billing_zip')
+    amount_str = request.form.get('amount')
+    if not payment_token or not billing_zip or not amount_str:
+        return payment_error('VALIDATION_ERROR', 'Missing required fields', 400)
+
+    # Customize amount and other parameters as needed
     try:
-        # TODO: Add your payment processing logic here
-        # Example implementation for basic charge:
-        
-        if 'payment_token' not in request.form:
-            return payment_error('Payment token is required', 400)
+        amount = round(float(amount_str), 2)
+    except ValueError:
+        amount = 0
+    if not math.isfinite(amount) or amount <= 0:
+        return payment_error('VALIDATION_ERROR', 'Amount must be a positive number', 400)
 
+    try:
         card = CreditCardData()
-        card.token = request.form['payment_token']
+        card.token = payment_token
 
-        # Customize amount and other parameters as needed
-        amount = float(request.form.get('amount', 10.00))
+        # Add billing address for AVS verification
+        address = Address()
+        address.postal_code = sanitize_postal_code(billing_zip)
 
-        # Add billing address if needed
-        if 'billing_zip' in request.form:
-            address = Address()
-            address.postal_code = sanitize_postal_code(request.form['billing_zip'])
-            
-            response = card.charge(amount)\
-                .with_allow_duplicates(True)\
-                .with_currency('USD')\
-                .with_address(address)\
-                .execute()
-        else:
-            # Process without address
-            response = card.charge(amount)\
-                .with_allow_duplicates(True)\
-                .with_currency('USD')\
-                .execute()
+        response = card.charge(amount)\
+            .with_allow_duplicates(True)\
+            .with_currency('USD')\
+            .with_address(address)\
+            .execute()
+
+        # A declined card comes back as a normal response, not an exception
+        if response.response_code != '00':
+            return payment_error('PAYMENT_DECLINED', response.response_message, 400)
 
         return jsonify({
             'success': True,
-            'message': 'Payment processed successfully',
+            'message': f'Payment successful! Transaction ID: {response.transaction_id}',
             'data': {'transactionId': response.transaction_id}
         })
 
     except ApiException as e:
-        # Gateway errors are passed back so the cause of the decline is visible
-        return payment_error(str(e), 400)
+        # Gateway errors are passed back so the cause of the failure is visible
+        return payment_error('API_ERROR', str(e), 400)
     except Exception:
         # Log unexpected errors on the server and return a generic message
         app.logger.exception('Unexpected error while processing payment')
-        return payment_error('An unexpected error occurred', 500)
+        return payment_error('SERVER_ERROR', 'An unexpected error occurred', 500)
 
 # Add your custom endpoints here
 # Examples:
