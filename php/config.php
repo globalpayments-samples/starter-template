@@ -22,9 +22,9 @@ require_once 'vendor/autoload.php';
 use Dotenv\Dotenv;
 
 try {
-    // Load environment variables from .env file
     $dotenv = Dotenv::createImmutable(__DIR__);
-    $dotenv->load();
+    // Load .env when there is one; in Docker the variables come from the environment
+    $dotenv->safeLoad();
 
     // Set response content type to JSON
     header('Content-Type: application/json');

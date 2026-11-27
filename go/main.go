@@ -183,10 +183,9 @@ func handlePayment(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	// Initialize environment configuration
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
+	// Load .env when there is one; in Docker the variables come from the environment
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, using environment variables")
 	}
 
 	// Configure Global Payments SDK with credentials and settings
@@ -196,7 +195,7 @@ func main() {
 	config.VersionNumber = "0000"
 	config.ServiceUrl = "https://cert.api2.heartlandportico.com"
 
-	err = api.ConfigureService(config, "default")
+	err := api.ConfigureService(config, "default")
 	if err != nil {
 		log.Fatal("Error configuring Global Payments service:", err)
 	}

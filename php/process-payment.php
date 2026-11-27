@@ -40,7 +40,8 @@ ini_set('display_errors', '0');
 function configureSdk(): void
 {
     $dotenv = Dotenv::createImmutable(__DIR__);
-    $dotenv->load();
+    // Load .env when there is one; in Docker the variables come from the environment
+    $dotenv->safeLoad();
 
     $config = new PorticoConfig();
     $config->secretApiKey = $_ENV['SECRET_API_KEY'];
