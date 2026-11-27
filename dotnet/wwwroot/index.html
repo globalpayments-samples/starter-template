@@ -52,6 +52,7 @@
                             Secure payment processing using Global Payments tokenization with client-side form validation.
                         </p>
                     </div>
+                    <div id="payment-form-tab-alerts"></div>
                     
                     <form id="payment-form" class="gp-form" action="/process-payment" method="POST">
                         <div class="gp-form-group">
@@ -68,10 +69,6 @@
                             <label class="gp-label">Credit Card Information:</label>
                             <div id="credit-card"></div>
                         </div>
-
-                        <button type="submit" class="gp-button gp-button-primary gp-button-full">
-                            Process Payment
-                        </button>
                     </form>
                 </div>
             </div>
@@ -208,6 +205,80 @@ app.post('/webhook', (req, res) => {
         </div>
     </footer>
 
-    <script src="https://globalpayments-samples.github.io/js/script.js"></script>
+    <script src="https://js.globalpay.com/v1/globalpayments.js"></script>
+    <script>
+        function showAlert(type, message) {
+            const card = document.querySelector('#payment-form-tab-alerts');
+            card.innerHTML = '';
+            const alert = document.createElement('div');
+            alert.className = `gp-alert gp-alert-${type}`;
+            alert.textContent = message;
+            card.appendChild(alert);
+        }
+
+        // Send the token and the form fields to the backend. The tab panel
+        // around the form has the same id, so select the form element itself.
+        async function processPayment(token) {
+            const form = document.querySelector('form#payment-form');
+            const body = new URLSearchParams(new FormData(form));
+            body.set('payment_token', token);
+            try {
+                const response = await fetch('/process-payment', { method: 'POST', body });
+                const result = await response.json();
+                if (result.success) {
+                    showAlert('success', result.message);
+                } else {
+                    const details = typeof result.error === 'object' ? result.error.details : result.error;
+                    showAlert('error', `${result.message}: ${details}`);
+                }
+            } catch (error) {
+                showAlert('error', `Payment request failed: ${error.message}`);
+            }
+        }
+
+        function initTabs() {
+            const buttons = document.querySelectorAll('.gp-tab-button');
+            buttons.forEach(button => button.addEventListener('click', () => {
+                buttons.forEach(b => b.classList.toggle('active', b === button));
+                document.querySelectorAll('.gp-tab-content').forEach(content => {
+                    content.classList.toggle('active', content.id === button.dataset.tab);
+                });
+            }));
+        }
+
+        // The hosted fields render the card inputs and their own submit button, which
+        // tokenizes the card. The Tokenization and Recurring tabs are placeholders:
+        // two credit card forms with the default options share the same field
+        // selectors, so build those flows on their own page.
+        async function initPaymentForm() {
+            const form = document.querySelector('form#payment-form');
+            form.addEventListener('submit', event => event.preventDefault());
+            try {
+                const response = await fetch('/config');
+                const config = await response.json();
+                GlobalPayments.configure({ publicApiKey: config.data.publicApiKey });
+
+                const cardForm = GlobalPayments.creditCard.form('#credit-card', { style: 'gp-default' });
+                cardForm.on('token-success', resp => {
+                    if (!form.reportValidity()) {
+                        return;
+                    }
+                    processPayment(resp.paymentReference);
+                });
+                cardForm.on('token-error', resp => {
+                    const reason = resp.reasons && resp.reasons[0] ? resp.reasons[0].message : '';
+                    showAlert('error', `Error tokenizing card: ${reason || 'check the card details'}`);
+                });
+            } catch (error) {
+                console.error('Payment form initialization failed:', error);
+                showAlert('error', 'Unable to initialize payment form. Please refresh the page.');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initTabs();
+            initPaymentForm();
+        });
+    </script>
 </body>
 </html>

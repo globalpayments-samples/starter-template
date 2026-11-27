@@ -7,7 +7,11 @@ if ($path === '/') {
     return false;
 }
 
-// The page's form posts to /process-payment without the extension
+// The page calls /config and /process-payment without the extension
+if ($path === '/config') {
+    require __DIR__ . '/config.php';
+    return true;
+}
 if ($path === '/process-payment') {
     require __DIR__ . '/process-payment.php';
     return true;
